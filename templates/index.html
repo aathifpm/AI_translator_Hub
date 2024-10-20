@@ -1,0 +1,620 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Translator Hub</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #50e3c2;
+            --background-color: #f0f4f8;
+            --text-color: #333;
+            --accent-color: #ff6b6b;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            height: calc(100vh - 40px);
+        }
+
+        .sidebar {
+            width: 300px;
+            padding: 30px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 10px;
+            background-color: rgba(255,255,255,0.2);
+            color: black;
+            font-size: 14px;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #3ce0b6;
+        }
+
+        .chat-area {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-area {
+            padding: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+        }
+
+        #text-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        #send-text {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        #send-text:hover {
+            background-color: #ff5252;
+        }
+
+        .message-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            align-self: flex-end;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 18px;
+            margin-bottom: 5px;
+            line-height: 1.4;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .user-message .message {
+            background-color: #e6f2ff;
+            color: var(--text-color);
+            border-bottom-right-radius: 0;
+        }
+
+        .bot-message .message {
+            background-color: #f0fff4;
+            color: var(--text-color);
+            border-bottom-left-radius: 0;
+        }
+
+        .message-info {
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #result {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+        }
+
+
+        .chat-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb:hover {
+            background: #3a80d2;
+        }
+
+        #reset-history {
+            margin-top: auto;
+            background-color: var(--accent-color);
+        }
+
+        #reset-history:hover {
+            background-color: #ff5252;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            background-color: rgba(74, 144, 226, 0.1);
+            border-radius: 20px;
+            padding: 5px 10px;
+        }
+
+        .audio-player button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+
+        .audio-player button:hover {
+            background-color: #3a80d2;
+        }
+
+        .audio-player .progress-bar {
+            flex-grow: 1;
+            height: 5px;
+            background-color: #e0e0e0;
+            border-radius: 2.5px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .audio-player .progress {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 2.5px;
+            width: 0;
+        }
+
+        .audio-player .time {
+            font-size: 12px;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                margin: 10px;
+                height: calc(100vh - 20px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .container {
+                flex-direction: column;
+                height: auto;
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 20px;
+                box-sizing: border-box;
+            }
+
+            .main-content {
+                height: calc(100vh - 300px);
+                overflow: hidden;
+            }
+
+            .chat-area {
+                height: calc(100% - 70px);
+                overflow-y: auto;
+            }
+
+            .input-area {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: white;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            select, button, #text-input {
+                font-size: 14px;
+            }
+
+            .message {
+                font-size: 14px;
+            }
+
+            .message-group {
+                max-width: 90%;
+            }
+
+            .input-area {
+                padding: 10px;
+            }
+
+            #send-text {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1><i class="fas fa-language"></i> AI Translator Hub</h1>
+            <form id="translate-form">
+                <select id="source_lang" name="source_lang">
+                    <option value="auto">Detect Language</option>
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="ta">Tamil</option>
+                    <option value="te">Telugu</option>
+                    <option value="kn">Kannada</option>
+                    <option value="ml">Malayalam</option>
+                    <option value="bn">Bengali</option>
+                    <option value="gu">Gujarati</option>
+                    <option value="mr">Marathi</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="ur">Urdu</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh-cn">Chinese (Simplified)</option>
+                    <option value="ar">Arabic</option>
+                </select>
+
+                <select id="target_lang" name="target_lang">
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="ta">Tamil</option>
+                    <option value="te">Telugu</option>
+                    <option value="kn">Kannada</option>
+                    <option value="ml">Malayalam</option>
+                    <option value="bn">Bengali</option>
+                    <option value="gu">Gujarati</option>
+                    <option value="mr">Marathi</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="ur">Urdu</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh-cn">Chinese (Simplified)</option>
+                    <option value="ar">Arabic</option>
+                </select>
+
+                <button type="submit"><i class="fas fa-microphone"></i> Start Listening</button>
+            </form>
+            <div id="result"></div>
+            <button id="reset-history"><i class="fas fa-trash"></i> Reset History</button>
+        </div>
+        <div class="main-content">
+            <div class="chat-area" id="history"></div>
+            <div class="input-area">
+                <input type="text" id="text-input" placeholder="Type your message...">
+                <button id="send-text"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateHistory() {
+            $.get('/history', function(data) {
+                $('#history').empty();
+                data.forEach(function(item, index) {
+                    $('#history').append(`
+                        <div class="message-group user-message">
+                            <div class="message-info">${item.timestamp} - ${item.source_lang}</div>
+                            <div class="message">${item.original_text}</div>
+                        </div>
+                        <div class="message-group bot-message">
+                            <div class="message-info">${item.target_lang}</div>
+                            <div class="message">${item.translated_text}</div>
+                            <div class="audio-player" id="audio-player-${index}">
+                                <button class="play-pause"><i class="fas fa-play"></i></button>
+                                <div class="progress-bar">
+                                    <div class="progress"></div>
+                                </div>
+                                <div class="time">${formatTime(item.audio_duration || 0)}</div>
+                                <audio src="${item.audio_url}" preload="metadata"></audio>
+                            </div>
+                        </div>
+                    `);
+                    initAudioPlayer(index);
+                });
+                updateLayout();
+            });
+        }
+
+        function initAudioPlayer(index) {
+            const playerContainer = $(`#audio-player-${index}`);
+            const audio = playerContainer.find('audio')[0];
+            const playPauseBtn = playerContainer.find('.play-pause');
+            const progress = playerContainer.find('.progress');
+            const progressBar = playerContainer.find('.progress-bar');
+            const timeDisplay = playerContainer.find('.time');
+
+          
+            timeDisplay.text('Loading...');
+
+            audio.addEventListener('loadedmetadata', function() {
+                
+                timeDisplay.text(formatTime(audio.duration));
+            });
+
+            playPauseBtn.click(function() {
+                if (audio.paused) {
+                    audio.play();
+                    $(this).html('<i class="fas fa-pause"></i>');
+                } else {
+                    audio.pause();
+                    $(this).html('<i class="fas fa-play"></i>');
+                }
+            });
+
+            audio.addEventListener('timeupdate', function() {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progress.css('width', `${percent}%`);
+                timeDisplay.text(formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration));
+            });
+
+            progressBar.click(function(e) {
+                const percent = (e.offsetX / $(this).width()) * 100;
+                audio.currentTime = (percent / 100) * audio.duration;
+            });
+
+            audio.addEventListener('ended', function() {
+                playPauseBtn.html('<i class="fas fa-play"></i>');
+                progress.css('width', '0%');
+                timeDisplay.text(formatTime(audio.duration));
+            });
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        $('#translate-form').submit(function(e) {
+            e.preventDefault();
+            $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Listening...</p>');
+            
+            console.log("Starting speech recognition");  
+            
+            $.ajax({
+                url: '/translate',
+                method: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    console.log("Speech recognition response:", response);  
+                    if (response.success) {
+                        $('#result').html(`
+                            <p><i class="fas fa-check"></i> Translation successful!</p>
+                        `);
+                        updateHistory();
+                    } else {
+                        $('#result').html(`<p><i class="fas fa-exclamation-triangle"></i> ${response.message}</p>`);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("AJAX error:", textStatus, errorThrown); 
+                    $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
+                }
+            });
+            updateLayout();
+        });
+
+        $('#send-text').click(function() {
+            var text = $('#text-input').val().trim();
+            if (text) {
+                $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>');
+                
+                console.log("Starting text translation:", text);  
+                
+                $.ajax({
+                    url: '/translate_text',
+                    method: 'POST',
+                    data: {
+                        text: text,
+                        source_lang: $('#source_lang').val(),
+                        target_lang: $('#target_lang').val()
+                    },
+                    success: function(response) {
+                        console.log("Text translation response:", response);  
+                        if (response.success) {
+                            $('#result').html(`
+                                <p><i class="fas fa-check"></i> Translation successful!</p>
+                            `);
+                            updateHistory();
+                            $('#text-input').val('');
+                        } else {
+                            $('#result').html(`<p><i class="fas fa-exclamation-triangle"></i> ${response.message}</p>`);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX error:", textStatus, errorThrown);  
+                        $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
+                    }
+                });
+                updateLayout();
+            }
+        });
+
+        $('#text-input').keypress(function(e) {
+            if (e.which == 13) {
+                $('#send-text').click();
+                return false;
+            }
+        });
+
+       
+        updateHistory();
+
+       
+        function resetHistory() {
+            $.ajax({
+                url: '/reset_history',
+                method: 'POST',
+                success: function(response) {
+                    if (response.success) {
+                        $('#history').empty();
+                        $('#result').html('<p><i class="fas fa-check"></i> History reset successfully!</p>');
+                    } else {
+                        $('#result').html('<p><i class="fas fa-exclamation-triangle"></i> Failed to reset history.</p>');
+                    }
+                },
+                error: function() {
+                    $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
+                }
+            });
+        }
+
+       
+        $('#reset-history').click(function(e) {
+            e.preventDefault();
+            resetHistory();
+        });
+
+       
+        function handleResize() {
+            if (window.innerWidth <= 768) {
+                const sidebarHeight = $('.sidebar').outerHeight();
+                const inputAreaHeight = $('.input-area').outerHeight();
+                const windowHeight = window.innerHeight;
+                $('.main-content').css('height', `${windowHeight - sidebarHeight}px`);
+                $('.chat-area').css('height', `${windowHeight - sidebarHeight - inputAreaHeight}px`);
+            } else {
+                $('.main-content, .chat-area').css('height', '');
+            }
+        }
+
+    
+        $(window).resize(handleResize);
+        $(document).ready(handleResize);
+
+
+        function updateLayout() {
+            handleResize();
+            $('.chat-area').scrollTop($('.chat-area')[0].scrollHeight);
+        }
+    </script>
+</body>
+</html>
