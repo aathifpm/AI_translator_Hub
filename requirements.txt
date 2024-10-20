@@ -2,4 +2,4 @@ Flask==2.1.0
 SpeechRecognition==3.8.1
 googletrans==3.1.0a0
 gTTS==2.2.3
-https://github.com/jleb/pyaudio/releases/download/0.2.11/PyAudio-0.2.11-cp311-cp311-linux_x86_64.whl
+https://files.pythonhosted.org/packages/27/bc/719d140ee63cf4b0725016531d36743a797ffdbab85e8536922902c9349a/PyAudio-0.2.14-cp310-cp310-win_amd64.whl
