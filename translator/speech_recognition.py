@@ -34,15 +34,20 @@ class SpeechRecognizer:
         return language_map.get(language, 'en-us')  # Default to en-us if not found
 
     # Keep the existing recognize_speech method for compatibility
-    def recognize_speech(self, audio, language):
-        if audio is None:
-            return None
+    def recognize_speech(self, audio_file_path):
+        with sr.AudioFile(audio_file_path) as source:
+            audio = self.recognizer.record(source)
+        
         try:
-            text = self.recognizer.recognize_google(audio, language=language)
-            print(f"Recognized: {text}")
+            text = self.recognizer.recognize_google(audio)
             return text
         except sr.UnknownValueError:
-            print("Sorry, I couldn't understand that.")
+            print("Google Speech Recognition could not understand audio")
         except sr.RequestError as e:
-            print(f"Sorry, there was an error connecting to the speech recognition service: {str(e)}")
-        return None
+            print(f"Could not request results from Google Speech Recognition service; {e}")
+        
+        return ""
+
+    def is_final_result(self, text):
+        # For this implementation, we'll consider all results as final
+        return True
