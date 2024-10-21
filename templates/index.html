@@ -343,18 +343,18 @@
     <script>
         let mediaRecorder;
         let audioChunks = [];
-        let isRecording = false;
+        let isListening = false;
 
         document.getElementById('startRecording').onclick = function() {
-            if (!isRecording) {
-                startRecording();
+            if (!isListening) {
+                startListening();
             } else {
-                stopRecording();
+                stopListening();
             }
         };
 
-        function startRecording() {
-            isRecording = true;
+        function startListening() {
+            isListening = true;
             audioChunks = [];
             $('#result').html('<p><i class="fas fa-microphone"></i> Listening...</p>');
             document.getElementById('startRecording').innerHTML = '<i class="fas fa-stop"></i> Stop Listening';
@@ -364,9 +364,12 @@
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => {
                         audioChunks.push(event.data);
+                        if (audioChunks.length > 10) {  // Send audio chunks every ~1 second
+                            sendAudioToServer();
+                            audioChunks = [];
+                        }
                     };
-                    mediaRecorder.onstop = sendAudioToServer;
-                    mediaRecorder.start(1000);
+                    mediaRecorder.start(100);  // Collect data every 100ms
                 })
                 .catch(error => {
                     console.error('Error accessing microphone:', error);
@@ -374,61 +377,33 @@
                 });
         }
 
-        function stopRecording() {
-            isRecording = false;
+        function stopListening() {
+            isListening = false;
             document.getElementById('startRecording').innerHTML = '<i class="fas fa-microphone"></i> Start Listening';
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
+                sendAudioToServer();  // Send any remaining audio
             }
         }
 
         function sendAudioToServer() {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.wav');
-
-            $.ajax({
-                url: '/recognize',
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.success) {
-                        $('#result').html(`<p><strong>Recognized:</strong> ${response.text}</p>`);
-                        sendTranscriptToServer(response.text);
-                    } else {
-                        $('#result').html(`<p><i class="fas fa-exclamation-triangle"></i> ${response.message}</p>`);
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.error("AJAX error:", textStatus, errorThrown);
-                    $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
-                }
-            });
-        }
-
-        function sendTranscriptToServer(transcript) {
-            let formData = new FormData();
-            formData.append('text', transcript);
+            formData.append('audio', audioBlob, 'recording.webm');
             formData.append('source_lang', document.getElementById('source_lang').value);
             formData.append('target_lang', document.getElementById('target_lang').value);
 
-            $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>');
-
             $.ajax({
-                url: '/translate',
+                url: '/recognize_and_translate',
                 method: 'POST',
                 data: formData,
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    console.log("Translation response:", response);
                     if (response.success) {
                         $('#result').html(`
                             <p><strong>Original:</strong> ${response.original_text}</p>
                             <p><strong>Translated:</strong> ${response.translated_text}</p>
-                            <audio controls src="${response.audio_url}"></audio>
                         `);
                         updateHistory();
                     } else {
