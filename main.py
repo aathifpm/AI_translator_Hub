@@ -37,10 +37,13 @@ def recognize():
 
     try:
         text = speech_recognizer.recognize_speech(temp_filepath)
-        return jsonify({'success': True, 'text': text})
+        if text:
+            return jsonify({'success': True, 'text': text})
+        else:
+            return jsonify({'success': False, 'message': 'No speech recognized'})
     except Exception as e:
         logger.error(f"Error in speech recognition: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error in speech recognition'})
+        return jsonify({'success': False, 'message': f'Error in speech recognition: {str(e)}'})
     finally:
         os.unlink(temp_filepath)
 
@@ -86,6 +89,17 @@ def translate():
     except Exception as e:
         logger.error(f"Error in translation: {str(e)}")
         return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'})
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    return jsonify(translation_history)
+
+# Add this new route for resetting history
+@app.route('/reset_history', methods=['POST'])
+def reset_history():
+    global translation_history
+    translation_history = []
+    return jsonify({'success': True, 'message': 'History reset successfully'})
 
 if __name__ == '__main__':
     app.run(debug=True)
