@@ -415,11 +415,11 @@
                 contentType: false,
                 success: function(response) {
                     console.log("Server response:", response);
-                    if (response.success && response.original_text && response.translated_text) {
+                    if (response.success && response.original_text && response.translated_text && response.audio_url) {
                         // Display user's original text
                         updateChatBox(response.original_text, true);
                         // Display bot's translated text
-                        updateChatBox(response.translated_text, false);
+                        updateChatBox(response.translated_text, false, response.audio_url);
                     } else if (response.message) {
                         console.log("Message from server:", response.message);
                     }
@@ -437,8 +437,9 @@
          * Updates the chat box with messages.
          * @param {string} text - The message text.
          * @param {boolean} isUser - True if the message is from the user, false if from the bot.
+         * @param {string} audioUrl - (Optional) URL of the audio to play for bot messages.
          */
-        function updateChatBox(text, isUser = true) {
+        function updateChatBox(text, isUser = true, audioUrl = null) {
             const chatArea = document.getElementById('history');
             const messageGroup = document.createElement('div');
             messageGroup.className = `message-group ${isUser ? 'user-message' : 'bot-message'}`;
@@ -448,6 +449,16 @@
             message.textContent = text;
 
             messageGroup.appendChild(message);
+
+            // If it's a bot message and an audio URL is provided, add an audio player
+            if (!isUser && audioUrl) {
+                const audioPlayer = document.createElement('audio');
+                audioPlayer.src = audioUrl;
+                audioPlayer.controls = true;
+                audioPlayer.autoplay = true;
+                messageGroup.appendChild(audioPlayer);
+            }
+
             chatArea.appendChild(messageGroup);
             chatArea.scrollTop = chatArea.scrollHeight;
         }
@@ -549,9 +560,9 @@
                         target_lang: $('#target_lang').val()
                     },
                     success: function(response) {
-                        if (response.success) {
-                            // Display bot's translated message
-                            updateChatBox(response.translated_text, false);
+                        if (response.success && response.translated_text && response.audio_url) {
+                            // Display bot's translated message with audio playback
+                            updateChatBox(response.translated_text, false, response.audio_url);
                             $('#text-input').val('');
                         } else {
                             console.error("Translation failed:", response.message);
@@ -583,7 +594,7 @@
                     $('#history').empty();
                     response.forEach(function(entry) {
                         updateChatBox(entry.original_text, true);   // User message
-                        updateChatBox(entry.translated_text, false); // Bot message
+                        updateChatBox(entry.translated_text, false, entry.audio_url); // Bot message with audio
                     });
                 },
                 error: function() {

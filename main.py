@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from translator.speech_recognition import SpeechRecognizer
 from translator.translation import Translator
+from translator.text_to_speech import TextToSpeech
 import tempfile
 import os
 import logging
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,9 +14,14 @@ app = Flask(__name__)
 
 speech_recognizer = SpeechRecognizer()
 translator = Translator()
+tts = TextToSpeech()
 
 # Add this global variable to store chat history
 chat_history = []
+
+# Ensure the 'static/audio' directory exists
+AUDIO_FOLDER = os.path.join('static', 'audio')
+os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
@@ -58,18 +65,32 @@ def recognize_and_translate():
         
         logger.info(f"Translation successful: {translated_text}")
         
+        # Generate TTS audio for translated text
+        unique_id = uuid.uuid4().hex
+        audio_filename = f"translated_{unique_id}.mp3"
+        audio_filepath = os.path.join(AUDIO_FOLDER, audio_filename)
+        tts_success = tts.speak(translated_text, audio_filepath, lang=target_lang)
+        
+        if not tts_success:
+            logger.error("Text-to-Speech conversion failed")
+            return jsonify({'success': False, 'message': 'Text-to-Speech conversion failed'})
+        
+        audio_url = f"/static/audio/{audio_filename}"
+        
         # Append to chat history before returning
         chat_history.append({
             'original_text': original_text,
             'translated_text': translated_text,
             'source_lang': source_lang,
-            'target_lang': target_lang
+            'target_lang': target_lang,
+            'audio_url': audio_url
         })
         
         return jsonify({
             'success': True,
             'original_text': original_text,
-            'translated_text': translated_text
+            'translated_text': translated_text,
+            'audio_url': audio_url
         })
     
     except Exception as e:
@@ -88,13 +109,26 @@ def translate_text():
     translated_text = translator.translate(text, src=source_lang, dest=target_lang)
 
     if translated_text:
+        # Generate TTS audio for translated text
+        unique_id = uuid.uuid4().hex
+        audio_filename = f"translated_text_{unique_id}.mp3"
+        audio_filepath = os.path.join(AUDIO_FOLDER, audio_filename)
+        tts_success = tts.speak(translated_text, audio_filepath, lang=target_lang)
+        
+        if not tts_success:
+            logger.error("Text-to-Speech conversion failed for text translation")
+            return jsonify({'success': False, 'message': 'Text-to-Speech conversion failed'})
+        
+        audio_url = f"/static/audio/{audio_filename}"
+        
         chat_history.append({
             'original_text': text,
             'translated_text': translated_text,
             'source_lang': source_lang,
-            'target_lang': target_lang
+            'target_lang': target_lang,
+            'audio_url': audio_url
         })
-        return jsonify({'success': True, 'translated_text': translated_text})
+        return jsonify({'success': True, 'translated_text': translated_text, 'audio_url': audio_url})
     else:
         return jsonify({'success': False, 'message': 'Translation failed'})
 
