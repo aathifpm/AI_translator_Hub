@@ -58,6 +58,14 @@ def recognize_and_translate():
         
         logger.info(f"Translation successful: {translated_text}")
         
+        # Append to chat history before returning
+        chat_history.append({
+            'original_text': original_text,
+            'translated_text': translated_text,
+            'source_lang': source_lang,
+            'target_lang': target_lang
+        })
+        
         return jsonify({
             'success': True,
             'original_text': original_text,
@@ -70,15 +78,6 @@ def recognize_and_translate():
     
     finally:
         os.unlink(temp_filepath)
-
-    # Add this at the end of the function, before the return statement
-    if 'original_text' in locals() and 'translated_text' in locals():
-        chat_history.append({
-            'original_text': original_text,
-            'translated_text': translated_text,
-            'source_lang': source_lang,
-            'target_lang': target_lang
-        })
 
 @app.route('/translate_text', methods=['POST'])
 def translate_text():

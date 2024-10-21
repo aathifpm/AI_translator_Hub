@@ -582,6 +582,23 @@
             e.preventDefault();
             resetHistory();
         });
+
+        // **Added Function: updateHistory**
+        function updateHistory() {
+            $.ajax({
+                url: '/history',
+                method: 'GET',
+                success: function(response) {
+                    $('#history').empty();
+                    response.forEach(function(entry) {
+                        updateChatBox(entry.original_text, entry.translated_text);
+                    });
+                },
+                error: function() {
+                    console.error("Failed to load history.");
+                }
+            });
+        }
     </script>
 </body>
 </html>
