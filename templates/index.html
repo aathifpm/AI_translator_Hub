@@ -156,6 +156,7 @@
             margin-bottom: 5px;
             line-height: 1.4;
             animation: fadeIn 0.5s ease;
+            position: relative;
         }
 
         .user-message .message {
@@ -345,6 +346,7 @@
         let audioChunks = [];
         let isListening = false;
         let pollInterval;
+        let audioStream; // To keep track of the audio stream
 
         document.getElementById('startRecording').onclick = function() {
             if (!isListening) {
@@ -362,6 +364,7 @@
 
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
+                    audioStream = stream; // Save the stream to stop it later
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => {
                         audioChunks.push(event.data);
@@ -385,6 +388,13 @@
             }
             clearInterval(pollInterval);
             sendAudioToServer();  // Send any remaining audio
+
+            // Stop all audio tracks to release the microphone
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
+
+            $('#result').html('<p><i class="fas fa-microphone-slash"></i> Listening stopped.</p>');
         }
 
         function sendAudioToServer() {
@@ -405,8 +415,11 @@
                 contentType: false,
                 success: function(response) {
                     console.log("Server response:", response);
-                    if (response.success && response.translated_text) {
-                        updateChatBox(response.original_text, response.translated_text);
+                    if (response.success && response.original_text && response.translated_text) {
+                        // Display user's original text
+                        updateChatBox(response.original_text, true);
+                        // Display bot's translated text
+                        updateChatBox(response.translated_text, false);
                     } else if (response.message) {
                         console.log("Message from server:", response.message);
                     }
@@ -420,22 +433,21 @@
             audioChunks = [];  // Clear the audio chunks after sending
         }
 
-        function updateChatBox(originalText, translatedText, isUser = true) {
+        /**
+         * Updates the chat box with messages.
+         * @param {string} text - The message text.
+         * @param {boolean} isUser - True if the message is from the user, false if from the bot.
+         */
+        function updateChatBox(text, isUser = true) {
             const chatArea = document.getElementById('history');
             const messageGroup = document.createElement('div');
             messageGroup.className = `message-group ${isUser ? 'user-message' : 'bot-message'}`;
 
-            const originalMessage = document.createElement('div');
-            originalMessage.className = 'message';
-            originalMessage.textContent = originalText;
+            const message = document.createElement('div');
+            message.className = 'message';
+            message.textContent = text;
 
-            const translatedMessage = document.createElement('div');
-            translatedMessage.className = 'message';
-            translatedMessage.textContent = translatedText;
-
-            messageGroup.appendChild(originalMessage);
-            messageGroup.appendChild(translatedMessage);
-
+            messageGroup.appendChild(message);
             chatArea.appendChild(messageGroup);
             chatArea.scrollTop = chatArea.scrollHeight;
         }
@@ -525,6 +537,9 @@
         $('#send-text').click(function() {
             var text = $('#text-input').val().trim();
             if (text) {
+                // Display user's message
+                updateChatBox(text, true);
+
                 $.ajax({
                     url: '/translate_text',
                     method: 'POST',
@@ -535,7 +550,8 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            updateChatBox(text, response.translated_text);
+                            // Display bot's translated message
+                            updateChatBox(response.translated_text, false);
                             $('#text-input').val('');
                         } else {
                             console.error("Translation failed:", response.message);
@@ -558,7 +574,25 @@
         // Initial history load
         updateHistory();
 
-        // Add this new function to handle resetting the history
+        // Function to update chat history from the server
+        function updateHistory() {
+            $.ajax({
+                url: '/history',
+                method: 'GET',
+                success: function(response) {
+                    $('#history').empty();
+                    response.forEach(function(entry) {
+                        updateChatBox(entry.original_text, true);   // User message
+                        updateChatBox(entry.translated_text, false); // Bot message
+                    });
+                },
+                error: function() {
+                    console.error("Failed to load history.");
+                }
+            });
+        }
+
+        // Function to reset chat history
         function resetHistory() {
             $.ajax({
                 url: '/reset_history',
@@ -582,23 +616,6 @@
             e.preventDefault();
             resetHistory();
         });
-
-        // **Added Function: updateHistory**
-        function updateHistory() {
-            $.ajax({
-                url: '/history',
-                method: 'GET',
-                success: function(response) {
-                    $('#history').empty();
-                    response.forEach(function(entry) {
-                        updateChatBox(entry.original_text, entry.translated_text);
-                    });
-                },
-                error: function() {
-                    console.error("Failed to load history.");
-                }
-            });
-        }
     </script>
 </body>
 </html>
