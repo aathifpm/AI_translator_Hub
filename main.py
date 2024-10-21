@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 import logging
 from werkzeug.utils import secure_filename
+import tempfile
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,10 +42,10 @@ def translate():
     try:
         # Check if the post request has the file part
         if 'file' not in request.files:
-            return jsonify({'success': False, 'message': 'No file part'})
+            return jsonify({'success': False, 'message': 'No file part in the request'})
         file = request.files['file']
         if file.filename == '':
-            return jsonify({'success': False, 'message': 'No selected file'})
+            return jsonify({'success': False, 'message': 'No file selected'})
         if file and allowed_file(file.filename):
             # Create a temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
@@ -83,8 +84,10 @@ def translate():
                         'translated_text': translated_text,
                         'audio_url': audio_file
                     })
+            else:
+                return jsonify({'success': False, 'message': 'Failed to recognize speech'})
         
-        return jsonify({'success': False, 'message': 'Translation failed. Please try again.'})
+        return jsonify({'success': False, 'message': 'Invalid file type'})
     except Exception as e:
         print(f"Error in translation: {str(e)}")  # For debugging
         return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'})
