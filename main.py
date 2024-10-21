@@ -13,6 +13,9 @@ app = Flask(__name__)
 speech_recognizer = SpeechRecognizer()
 translator = Translator()
 
+# Add this global variable to store chat history
+chat_history = []
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -67,6 +70,44 @@ def recognize_and_translate():
     
     finally:
         os.unlink(temp_filepath)
+
+    # Add this at the end of the function, before the return statement
+    if 'original_text' in locals() and 'translated_text' in locals():
+        chat_history.append({
+            'original_text': original_text,
+            'translated_text': translated_text,
+            'source_lang': source_lang,
+            'target_lang': target_lang
+        })
+
+@app.route('/translate_text', methods=['POST'])
+def translate_text():
+    text = request.form.get('text')
+    source_lang = request.form.get('source_lang', 'auto')
+    target_lang = request.form.get('target_lang', 'en')
+
+    translated_text = translator.translate(text, src=source_lang, dest=target_lang)
+
+    if translated_text:
+        chat_history.append({
+            'original_text': text,
+            'translated_text': translated_text,
+            'source_lang': source_lang,
+            'target_lang': target_lang
+        })
+        return jsonify({'success': True, 'translated_text': translated_text})
+    else:
+        return jsonify({'success': False, 'message': 'Translation failed'})
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    return jsonify(chat_history)
+
+@app.route('/reset_history', methods=['POST'])
+def reset_history():
+    global chat_history
+    chat_history = []
+    return jsonify({'success': True, 'message': 'History reset successfully'})
 
 if __name__ == '__main__':
     app.run(debug=True)

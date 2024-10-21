@@ -406,10 +406,7 @@
                 success: function(response) {
                     console.log("Server response:", response);
                     if (response.success && response.translated_text) {
-                        $('#result').html(`
-                            <p><strong>Original:</strong> ${response.original_text}</p>
-                            <p><strong>Translated:</strong> ${response.translated_text}</p>
-                        `);
+                        updateChatBox(response.original_text, response.translated_text);
                     } else if (response.message) {
                         console.log("Message from server:", response.message);
                     }
@@ -423,32 +420,24 @@
             audioChunks = [];  // Clear the audio chunks after sending
         }
 
-        function updateHistory() {
-            $.get('/history', function(data) {
-                $('#history').empty();
-                data.forEach(function(item, index) {
-                    $('#history').append(`
-                        <div class="message-group user-message">
-                            <div class="message-info">${item.timestamp} - ${item.source_lang}</div>
-                            <div class="message">${item.original_text}</div>
-                        </div>
-                        <div class="message-group bot-message">
-                            <div class="message-info">${item.target_lang}</div>
-                            <div class="message">${item.translated_text}</div>
-                            <div class="audio-player" id="audio-player-${index}">
-                                <button class="play-pause"><i class="fas fa-play"></i></button>
-                                <div class="progress-bar">
-                                    <div class="progress"></div>
-                                </div>
-                                <div class="time">${formatTime(item.audio_duration || 0)}</div>
-                                <audio src="${item.audio_url}" preload="metadata"></audio>
-                            </div>
-                        </div>
-                    `);
-                    initAudioPlayer(index);
-                });
-                $('.chat-area').scrollTop($('.chat-area')[0].scrollHeight);
-            });
+        function updateChatBox(originalText, translatedText, isUser = true) {
+            const chatArea = document.getElementById('history');
+            const messageGroup = document.createElement('div');
+            messageGroup.className = `message-group ${isUser ? 'user-message' : 'bot-message'}`;
+
+            const originalMessage = document.createElement('div');
+            originalMessage.className = 'message';
+            originalMessage.textContent = originalText;
+
+            const translatedMessage = document.createElement('div');
+            translatedMessage.className = 'message';
+            translatedMessage.textContent = translatedText;
+
+            messageGroup.appendChild(originalMessage);
+            messageGroup.appendChild(translatedMessage);
+
+            chatArea.appendChild(messageGroup);
+            chatArea.scrollTop = chatArea.scrollHeight;
         }
 
         function initAudioPlayer(index) {
@@ -536,10 +525,6 @@
         $('#send-text').click(function() {
             var text = $('#text-input').val().trim();
             if (text) {
-                $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>');
-                
-                console.log("Starting text translation:", text);  // Debug info
-                
                 $.ajax({
                     url: '/translate_text',
                     method: 'POST',
@@ -549,20 +534,15 @@
                         target_lang: $('#target_lang').val()
                     },
                     success: function(response) {
-                        console.log("Text translation response:", response);  // Debug info
                         if (response.success) {
-                            $('#result').html(`
-                                <p><i class="fas fa-check"></i> Translation successful!</p>
-                            `);
-                            updateHistory();
+                            updateChatBox(text, response.translated_text);
                             $('#text-input').val('');
                         } else {
-                            $('#result').html(`<p><i class="fas fa-exclamation-triangle"></i> ${response.message}</p>`);
+                            console.error("Translation failed:", response.message);
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        console.error("AJAX error:", textStatus, errorThrown);  // Debug info
-                        $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
+                        console.error("AJAX error:", textStatus, errorThrown);
                     }
                 });
             }
