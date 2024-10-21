@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,8 +23,8 @@
             background-color: var(--background-color);
             color: var(--text-color);
             display: flex;
-            min-height: 100vh;
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .container {
@@ -193,7 +192,7 @@
             color: white;
         }
 
-
+        /* Scrollbar Styles */
         .chat-area::-webkit-scrollbar {
             width: 8px;
         }
@@ -270,79 +269,6 @@
             font-size: 12px;
             color: #666;
             margin-left: 10px;
-        }
-
-        @media (max-width: 1024px) {
-            .container {
-                margin: 10px;
-                height: calc(100vh - 20px);
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-
-            .container {
-                flex-direction: column;
-                height: auto;
-                margin: 0;
-                border-radius: 0;
-            }
-
-            .sidebar {
-                width: 100%;
-                padding: 20px;
-                box-sizing: border-box;
-            }
-
-            .main-content {
-                height: calc(100vh - 300px);
-                overflow: hidden;
-            }
-
-            .chat-area {
-                height: calc(100% - 70px);
-                overflow-y: auto;
-            }
-
-            .input-area {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background-color: white;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            }
-        }
-
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 20px;
-            }
-
-            select, button, #text-input {
-                font-size: 14px;
-            }
-
-            .message {
-                font-size: 14px;
-            }
-
-            .message-group {
-                max-width: 90%;
-            }
-
-            .input-area {
-                padding: 10px;
-            }
-
-            #send-text {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
-            }
         }
     </style>
 </head>
@@ -439,7 +365,7 @@
                     `);
                     initAudioPlayer(index);
                 });
-                updateLayout();
+                $('.chat-area').scrollTop($('.chat-area')[0].scrollHeight);
             });
         }
 
@@ -451,11 +377,11 @@
             const progressBar = playerContainer.find('.progress-bar');
             const timeDisplay = playerContainer.find('.time');
 
-          
+            // Show loading state
             timeDisplay.text('Loading...');
 
             audio.addEventListener('loadedmetadata', function() {
-                
+                // Update time display with total duration
                 timeDisplay.text(formatTime(audio.duration));
             });
 
@@ -497,14 +423,14 @@
             e.preventDefault();
             $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Listening...</p>');
             
-            console.log("Starting speech recognition");  
+            console.log("Starting speech recognition");  // Debug info
             
             $.ajax({
                 url: '/translate',
                 method: 'POST',
                 data: $(this).serialize(),
                 success: function(response) {
-                    console.log("Speech recognition response:", response);  
+                    console.log("Speech recognition response:", response);  // Debug info
                     if (response.success) {
                         $('#result').html(`
                             <p><i class="fas fa-check"></i> Translation successful!</p>
@@ -515,11 +441,10 @@
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    console.error("AJAX error:", textStatus, errorThrown); 
+                    console.error("AJAX error:", textStatus, errorThrown);  // Debug info
                     $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
                 }
             });
-            updateLayout();
         });
 
         $('#send-text').click(function() {
@@ -527,7 +452,7 @@
             if (text) {
                 $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>');
                 
-                console.log("Starting text translation:", text);  
+                console.log("Starting text translation:", text);  // Debug info
                 
                 $.ajax({
                     url: '/translate_text',
@@ -538,7 +463,7 @@
                         target_lang: $('#target_lang').val()
                     },
                     success: function(response) {
-                        console.log("Text translation response:", response);  
+                        console.log("Text translation response:", response);  // Debug info
                         if (response.success) {
                             $('#result').html(`
                                 <p><i class="fas fa-check"></i> Translation successful!</p>
@@ -550,11 +475,10 @@
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        console.error("AJAX error:", textStatus, errorThrown);  
+                        console.error("AJAX error:", textStatus, errorThrown);  // Debug info
                         $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
                     }
                 });
-                updateLayout();
             }
         });
 
@@ -565,10 +489,10 @@
             }
         });
 
-       
+        // Initial history load
         updateHistory();
 
-       
+        // Add this new function to handle resetting the history
         function resetHistory() {
             $.ajax({
                 url: '/reset_history',
@@ -587,34 +511,11 @@
             });
         }
 
-       
+        // Add click event listener for the reset history button
         $('#reset-history').click(function(e) {
             e.preventDefault();
             resetHistory();
         });
-
-       
-        function handleResize() {
-            if (window.innerWidth <= 768) {
-                const sidebarHeight = $('.sidebar').outerHeight();
-                const inputAreaHeight = $('.input-area').outerHeight();
-                const windowHeight = window.innerHeight;
-                $('.main-content').css('height', `${windowHeight - sidebarHeight}px`);
-                $('.chat-area').css('height', `${windowHeight - sidebarHeight - inputAreaHeight}px`);
-            } else {
-                $('.main-content, .chat-area').css('height', '');
-            }
-        }
-
-    
-        $(window).resize(handleResize);
-        $(document).ready(handleResize);
-
-
-        function updateLayout() {
-            handleResize();
-            $('.chat-area').scrollTop($('.chat-area')[0].scrollHeight);
-        }
     </script>
 </body>
 </html>

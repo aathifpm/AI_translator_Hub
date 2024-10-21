@@ -14,13 +14,13 @@ class TextToSpeech:
             logger.info(f"Generating speech for text: '{text}' in language: {lang}")
             tts = gTTS(text=text, lang=lang, slow=False)
             
-  
+            # Ensure the directory exists
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             
             tts.save(filename)
             logger.info(f"Audio file saved successfully: {filename}")
             
-
+            # Verify file was created
             if os.path.exists(filename):
                 logger.info(f"File exists: {filename}")
                 return True
