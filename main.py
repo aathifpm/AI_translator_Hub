@@ -46,13 +46,18 @@ def translate():
         if file.filename == '':
             return jsonify({'success': False, 'message': 'No selected file'})
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            # Create a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+                file.save(temp_file.name)
+                temp_filepath = temp_file.name
             
-            # Recognize speech from file
-            text = speech_recognizer.recognize_from_file(filepath, language=source_lang)
+            # Recognize speech from temporary file
+            text = speech_recognizer.recognize_from_file(temp_filepath, language=source_lang)
             print(f"Recognized text: {text}")  # Debug info
+            
+            # Remove the temporary file
+            os.unlink(temp_filepath)
+            
             if text:
                 # Translate
                 translated_text = translator.translate(text, src=source_lang, dest=target_lang)
@@ -72,18 +77,12 @@ def translate():
                         'audio_url': audio_file
                     })
                     
-                    # Don't forget to remove the temporary file after processing
-                    os.remove(filepath)
-                    
                     return jsonify({
                         'success': True,
                         'original_text': text,
                         'translated_text': translated_text,
                         'audio_url': audio_file
                     })
-            
-            # Don't forget to remove the temporary file after processing
-            os.remove(filepath)
         
         return jsonify({'success': False, 'message': 'Translation failed. Please try again.'})
     except Exception as e:
