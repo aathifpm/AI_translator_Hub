@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-from flask_socketio import SocketIO
 from translator.speech_recognition import SpeechRecognizer
 from translator.translation import Translator
 from translator.text_to_speech import TextToSpeech
@@ -7,12 +6,12 @@ import os
 from datetime import datetime
 import logging
 import tempfile
+import base64
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-socketio = SocketIO(app)
 
 speech_recognizer = SpeechRecognizer()
 translator = Translator()
@@ -25,19 +24,23 @@ translation_history = []
 def index():
     return render_template('index.html')
 
-@socketio.on('stream-audio')
-def handle_stream_audio(audio_blob):
+@app.route('/recognize', methods=['POST'])
+def recognize():
+    if 'audio' not in request.files:
+        return jsonify({'success': False, 'message': 'No audio file provided'})
+    
+    audio_file = request.files['audio']
+    
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-        temp_file.write(audio_blob)
+        audio_file.save(temp_file.name)
         temp_filepath = temp_file.name
 
     try:
         text = speech_recognizer.recognize_speech(temp_filepath)
-        is_final = speech_recognizer.is_final_result(text)
-        socketio.emit('transcription', {'text': text, 'isFinal': is_final})
+        return jsonify({'success': True, 'text': text})
     except Exception as e:
         logger.error(f"Error in speech recognition: {str(e)}")
-        socketio.emit('transcription', {'text': 'Error in speech recognition', 'isFinal': True})
+        return jsonify({'success': False, 'message': 'Error in speech recognition'})
     finally:
         os.unlink(temp_filepath)
 
@@ -85,4 +88,4 @@ def translate():
         return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    app.run(debug=True)
