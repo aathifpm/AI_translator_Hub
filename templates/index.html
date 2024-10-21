@@ -400,6 +400,7 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
+                    console.log("Server response:", response);  // Log the entire response
                     if (response.success) {
                         $('#result').html(`
                             <p><strong>Original:</strong> ${response.original_text}</p>
@@ -407,11 +408,13 @@
                         `);
                         updateHistory();
                     } else {
+                        console.error("Error from server:", response.message);
                         $('#result').html(`<p><i class="fas fa-exclamation-triangle"></i> ${response.message}</p>`);
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
                     console.error("AJAX error:", textStatus, errorThrown);
+                    console.error("Response text:", jqXHR.responseText);
                     $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
                 }
             });

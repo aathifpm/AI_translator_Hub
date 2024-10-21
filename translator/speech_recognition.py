@@ -1,6 +1,10 @@
 import speech_recognition as sr
 from pydub import AudioSegment
 import io
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class SpeechRecognizer:
     def __init__(self):
@@ -8,25 +12,32 @@ class SpeechRecognizer:
 
     def recognize_speech(self, audio_file_path, language='en-US'):
         try:
+            logger.debug(f"Starting speech recognition for file: {audio_file_path}")
+            
             # Convert WebM to WAV
             audio = AudioSegment.from_file(audio_file_path, format="webm")
+            logger.debug("Audio file loaded successfully")
+            
             wav_io = io.BytesIO()
             audio.export(wav_io, format="wav")
             wav_io.seek(0)
+            logger.debug("Audio converted to WAV format")
             
             # Perform the recognition
             with sr.AudioFile(wav_io) as source:
+                logger.debug("Reading audio file")
                 audio_data = self.recognizer.record(source)
             
+            logger.debug(f"Recognizing speech using Google Speech Recognition (language: {language})")
             text = self.recognizer.recognize_google(audio_data, language=language)
-            print(f"Recognized: {text}")
+            logger.info(f"Recognized text: {text}")
             return text
         except sr.UnknownValueError:
-            print("Google Speech Recognition could not understand audio")
+            logger.error("Google Speech Recognition could not understand audio")
         except sr.RequestError as e:
-            print(f"Could not request results from Google Speech Recognition service; {e}")
+            logger.error(f"Could not request results from Google Speech Recognition service; {e}")
         except Exception as e:
-            print(f"Error during speech recognition: {str(e)}")
+            logger.error(f"Error during speech recognition: {str(e)}", exc_info=True)
         return None
 
     def is_final_result(self, text):
