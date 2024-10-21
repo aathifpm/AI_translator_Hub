@@ -276,7 +276,7 @@
     <div class="container">
         <div class="sidebar">
             <h1><i class="fas fa-language"></i> AI Translator Hub</h1>
-            <form id="translate-form" enctype="multipart/form-data">
+            <form id="translate-form">
                 <select id="source_lang" name="source_lang">
                     <option value="auto">Detect Language</option>
                     <option value="en">English</option>
@@ -326,8 +326,7 @@
                     <option value="ar">Arabic</option>
                 </select>
 
-                <input type="file" name="file" accept="audio/*" capture>
-                <button type="submit"><i class="fas fa-microphone"></i> Start Listening</button>
+                <button type="button" id="startRecording"><i class="fas fa-microphone"></i> Start Listening</button>
             </form>
             <div id="result"></div>
             <button id="reset-history"><i class="fas fa-trash"></i> Reset History</button>
@@ -342,6 +341,91 @@
     </div>
 
     <script>
+        let recognition;
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'auto'; // Set to 'auto' for language detection
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                $('#result').html(`<p><i class="fas fa-microphone"></i> Listening: ${interimTranscript}</p>`);
+
+                if (finalTranscript !== '') {
+                    recognition.stop();
+                    sendTranscriptToServer(finalTranscript);
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                $('#result').html(`<p><i class="fas fa-exclamation-circle"></i> Error: ${event.error}</p>`);
+            };
+
+            recognition.onend = function() {
+                document.getElementById('startRecording').disabled = false;
+                $('#result').html('<p><i class="fas fa-check"></i> Finished listening.</p>');
+            };
+        } else {
+            console.log('Web Speech API is not supported in this browser.');
+            $('#result').html('<p><i class="fas fa-exclamation-circle"></i> Speech recognition is not supported in this browser.</p>');
+        }
+
+        document.getElementById('startRecording').onclick = function() {
+            this.disabled = true;
+            $('#result').html('<p><i class="fas fa-microphone"></i> Listening...</p>');
+            recognition.start();
+        };
+
+        function sendTranscriptToServer(transcript) {
+            let formData = new FormData();
+            formData.append('text', transcript);
+            formData.append('source_lang', document.getElementById('source_lang').value);
+            formData.append('target_lang', document.getElementById('target_lang').value);
+
+            $('#result').html('<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>');
+
+            $.ajax({
+                url: '/translate',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    console.log("Translation response:", response);
+                    if (response.success) {
+                        $('#result').html(`
+                            <p><strong>Original:</strong> ${response.original_text}</p>
+                            <p><strong>Translated:</strong> ${response.translated_text}</p>
+                            <audio controls src="${response.audio_url}"></audio>
+                        `);
+                        updateHistory();
+                    } else {
+                        $('#result').html(`<p><i class="fas fa-exclamation-triangle"></i> ${response.message}</p>`);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("AJAX error:", textStatus, errorThrown);
+                    $('#result').html('<p><i class="fas fa-exclamation-circle"></i> An error occurred. Please try again.</p>');
+                },
+                complete: function() {
+                    document.getElementById('startRecording').disabled = false;
+                }
+            });
+        }
+
         function updateHistory() {
             $.get('/history', function(data) {
                 $('#history').empty();
