@@ -30,6 +30,10 @@ def recognize_and_translate():
         return jsonify({'success': False, 'message': 'No audio file provided'})
     
     audio_file = request.files['audio']
+    if audio_file.content_length == 0:
+        logger.error("Received empty audio file")
+        return jsonify({'success': False, 'message': 'Received empty audio file'})
+    
     source_lang = request.form.get('source_lang', 'auto')
     target_lang = request.form.get('target_lang', 'en')
     

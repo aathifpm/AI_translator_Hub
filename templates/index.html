@@ -364,6 +364,7 @@
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => {
                         audioChunks.push(event.data);
+                        console.log("Received audio chunk, size:", event.data.size, "bytes");
                         if (audioChunks.length > 10) {  // Send audio chunks every ~1 second
                             sendAudioToServer();
                             audioChunks = [];
@@ -388,6 +389,7 @@
 
         function sendAudioToServer() {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            console.log("Audio blob size:", audioBlob.size, "bytes");
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
             formData.append('source_lang', document.getElementById('source_lang').value);
