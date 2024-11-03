@@ -1,5 +1,3 @@
-
-```markdown
 # AI Translator Hub
 
 AI Translator Hub is a real-time speech and text translation web application that supports multiple languages. It provides seamless translation services with audio output capabilities.
